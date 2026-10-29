@@ -34,7 +34,6 @@ AI recommendations and blockchain integration will be developed in later stages.
 - [Requirements](docs/requirements.md)
 - [System context](docs/system-context.md)
 - [Git workflow](docs/workflow.md)
-- [Week 1 learning guide](docs/week1-guide.md)
 
 ## Learning goals
 
