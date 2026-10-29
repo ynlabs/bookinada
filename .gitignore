@@ -1,0 +1,26 @@
+# Local OS and editor files
+.DS_Store
+.idea/
+*.iml
+*.swp
+
+# Credentials and local overrides
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Future build outputs and dependencies
+target/
+node_modules/
+dist/
+build/
+coverage/
+.venv/
+__pycache__/
+*.pyc
+*.log
+
+# Locally retained course material
+course-materials/

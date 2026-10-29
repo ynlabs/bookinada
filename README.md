@@ -16,7 +16,7 @@ This is a personal learning project based on TUM's Advanced Topics of Software E
 
 ## Current status
 
-Week 1: project setup, system context, and initial requirements. No application functionality has been implemented yet. Existing documentation is a draft for review.
+Week 1: project setup, a system-context diagram, eight functional requirements, and three quality requirements are prepared as a tutor-assisted proposal. Hotel search includes proposed acceptance scenarios for matching offers, invalid dates, and no results. Learner approval and independent peer review remain pending. No application functionality has been implemented or tested.
 
 ## Planned technology
 
