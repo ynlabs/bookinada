@@ -20,8 +20,8 @@ Week 1: project setup, a system-context diagram, eight functional requirements, 
 
 ## Planned technology
 
-- Backend: Java and Spring Boot
-- Frontend: React
+- Backend: TypeScript, Node.js, and NestJS
+- Frontend: React and TypeScript
 - Database: PostgreSQL
 - API specifications: OpenAPI
 - Containers: Docker and Docker Compose
@@ -34,6 +34,7 @@ AI recommendations and blockchain integration will be developed in later stages.
 - [Requirements](docs/requirements.md)
 - [System context](docs/system-context.md)
 - [Git workflow](docs/workflow.md)
+- [Internal architecture](docs/architecture.md)
 
 ## Learning goals
 
