@@ -1,0 +1,8 @@
+extends:
+  - recommended
+
+# These are local, private learning contracts, not published production APIs.
+# Keep localhost and do not invent a public license URL to satisfy publishing rules.
+rules:
+  no-server-example.com: off
+  info-license-strict: off

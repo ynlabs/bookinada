@@ -99,6 +99,8 @@ AC1 tests overbooking; it does not prove the absence of every concurrency defect
 | A5  | The NFR1 target and test conditions are proposed by the learner/tutor.                                                                                                                                                                                                                                      | Not prescribed or yet validated by the course.                                                                                 |
 | A6  | The NFR3 target and workload are proposed learning benchmarks.                                                                                                                                                                                                                                              | Not a production capacity claim or a measured result.                                                                          |
 | A7  | The personal learning workflow is solo and uses GitHub.                                                                                                                                                                                                                                                     | Explicit deviation from the exercise's team/LRZ GitLab instructions.                                                           |
+| A8 | Initial Hotel and Flight reservation requests carry a synthetic test travellerId. | Local learning only; not identity verification. Production ownership must come from a verified identity; authentication remains open. |
+| A9 | A flight offer identifies one scheduled departure with its own seat inventory; each request reserves one seat. | Explicit initial API proposal. Recurring flight numbers, shared inventory across fares, connecting flights, and round trips are outside the first contract. |
 
 ## Open decisions
 
@@ -113,7 +115,7 @@ AC1 tests overbooking; it does not prove the absence of every concurrency defect
 ## Review checklist
 
 - [ ] Learner can explain every FR and NFR in their own words.
-- [ ] Learner accepts or revises A1–A7 (assistant refinement does not imply learner approval).
+- [ ] Learner accepts or revises A1–A9 (assistant refinement does not imply learner approval).
 - [x] Assistant inspected consistency between requirements, system-context documentation, and diagram labels; this is document review, not application testing.
 - [ ] Another student has reviewed the requirements (not yet performed).
 - [x] Assistant recorded known ambiguities and missing scenario behaviour in Open decisions.

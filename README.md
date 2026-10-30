@@ -18,6 +18,8 @@ This is a personal learning project based on TUM's Advanced Topics of Software E
 
 Week 1: project setup, a system-context diagram, eight functional requirements, and three quality requirements are prepared as a tutor-assisted proposal. Hotel search includes proposed acceptance scenarios for matching offers, invalid dates, and no results. Learner approval and independent peer review remain pending. No application functionality has been implemented or tested.
 
+Week 2: the internal architecture and six initial REST operations are documented. Hotel and Flight OpenAPI 3.0.3 contracts pass local Redocly validation. Temporary fault-injection checks confirmed that unresolved schema references and warnings cause validation to fail, and restored contracts pass. A GitHub Actions workflow is prepared; its remote run and PR review remain pending. These checks do not establish application behavior or exam readiness.
+
 ## Planned technology
 
 - Backend: TypeScript, Node.js, and NestJS
@@ -35,6 +37,21 @@ AI recommendations and blockchain integration will be developed in later stages.
 - [System context](docs/system-context.md)
 - [Git workflow](docs/workflow.md)
 - [Internal architecture](docs/architecture.md)
+- [REST API design](docs/api-design.md)
+- [Hotel OpenAPI contract](api/hotel.openapi.yaml)
+- [Flight OpenAPI contract](api/flight.openapi.yaml)
+- [API validation and verification](docs/api-validation.md)
+
+## Validate API contracts
+
+Use Node.js 22 (22.12.0 or newer) and npm 10 or newer. From the repository root:
+
+```sh
+npm ci
+npm run lint:api
+```
+
+The validator fails on errors or warnings from the configured rule set. It checks the contracts, not a running implementation. The local server addresses in the contracts are proposed endpoints, not deployed services.
 
 ## Learning goals
 
