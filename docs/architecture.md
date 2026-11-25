@@ -13,8 +13,7 @@ The responsibilities below are mapped to the proposed deployment units in the De
 
 ## Communication relationships
 
-The initial design proposes synchronous HTTP APIs with JSON payloads.
-Exact endpoints and response schemas will be defined in the API contracts.
+The initial design proposes synchronous HTTP APIs with JSON payloads. Exact endpoints and response schemas will be defined in the API contracts.
 
 | Caller                 | Provider       | Purpose                                                                |
 | ---------------------- | -------------- | ---------------------------------------------------------------------- |
@@ -34,15 +33,15 @@ Each service controls access to its own data. The initial database deployment is
 
 ## Deployment design
 
-Status: proposed learning architecture; not yet implemented.
+Status: proposed architecture; not yet implemented.
 
-| Deployment unit        | Technology                      | Purpose                                                                                |
-| ---------------------- | ------------------------------- | -------------------------------------------------------------------------------------- |
-| Web frontend           | React and TypeScript            | Provides search, reservation, combined-booking, and recommendation screens.            |
-| Flight Service         | NestJS, Node.js, and TypeScript | Runs the flight API as an independent backend application.                             |
-| Hotel Service          | NestJS, Node.js, and TypeScript | Runs the hotel API as an independent backend application.                              |
-| Booking Coordinator    | NestJS, Node.js, and TypeScript | Runs the combined-booking API as an independent backend application.                   |
-| Recommendation Service | NestJS, Node.js, and TypeScript | Runs the recommendation API; initially uses rules rather than an external AI provider. |
+| Deployment unit        | Technology         | Purpose                                                                                |
+| ---------------------- | ------------------ | -------------------------------------------------------------------------------------- |
+| Web frontend           | To be decided      | Provides search, reservation, combined-booking, and recommendation screens.            |
+| Flight Service         | Python and FastAPI | Runs the flight API as an independent backend application.                             |
+| Hotel Service          | Python and FastAPI | Runs the hotel API as an independent backend application.                              |
+| Booking Coordinator    | Python and FastAPI | Runs the combined-booking API as an independent backend application.                   |
+| Recommendation Service | Python and FastAPI | Runs the recommendation API; initially uses rules rather than an external AI provider. |
 
 Flight Service, Hotel Service, and Booking Coordinator each own a separate PostgreSQL database. For local development, these databases may share one PostgreSQL instance, using separate credentials and access permissions.
 
@@ -60,20 +59,18 @@ Sharing one PostgreSQL instance reduces local setup overhead but creates a share
 
 Status: proposed architecture; not yet implemented.
 
-Application-to-application calls use synchronous HTTP with JSON.
-Database access uses SQL. Arrows point from caller to provider;
-responses are implicit.
+Application-to-application calls use synchronous HTTP with JSON. Database access uses SQL. Arrows point from caller to provider; responses are implicit.
 
 ```mermaid
 flowchart TB
     U["Traveller"]
 
     subgraph B["Bookinada"]
-        W["Web frontend (React / TypeScript)"]
-        C["Booking Coordinator (NestJS / TypeScript)"]
-        R["Recommendation Service (NestJS / TypeScript)"]
-        F["Flight Service (NestJS / TypeScript)"]
-        H["Hotel Service (NestJS / TypeScript)"]
+        W["Web frontend (TBD)"]
+        C["Booking Coordinator (Python / FastAPI)"]
+        R["Recommendation Service (Python / FastAPI)"]
+        F["Flight Service (Python / FastAPI)"]
+        H["Hotel Service (Python / FastAPI)"]
 
         FD[("Flight DB (PostgreSQL)")]
         HD[("Hotel DB (PostgreSQL)")]
@@ -98,5 +95,5 @@ flowchart TB
 ```
 
 The three logical databases may share one PostgreSQL instance locally.
-Notification delivery and the future blockchain alternative remain
-outside the scope of this initial internal design and require refinement.
+
+Notification delivery and the future blockchain alternative remain outside the scope of this initial internal design and require refinement.

@@ -13,7 +13,6 @@
 
 # Future build outputs and dependencies
 target/
-node_modules/
 dist/
 build/
 coverage/
