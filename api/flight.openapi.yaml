@@ -1,389 +1,358 @@
-openapi: "3.0.3"
+openapi: 3.0.3
+
 info:
-  title: "Bookinada Flight API"
-  version: "0.1.0"
-  description: "Proposed learning contract; no service implementation exists yet. Examples use synthetic data. Authentication, prices, idempotent retries, and operational server-error responses require further design before production use. Business invariants and relationships between fields require implementation and tests; linting does not prove them."
+  title: Bookinada Flight API
+  version: 0.1.0
+  description: >
+    Search flight offers, view availability, and create reservations
+    using synthetic data.
   license:
-    name: "Proprietary - no license granted"
+    name: Proprietary - no license granted
+
 servers:
-  -
-    url: "http://localhost:3001"
-    description: "Proposed local development endpoint; no running service is implied."
+  - url: http://localhost:3001
+
 security: []
+
 tags:
-  -
-    name: "Flight offers and reservations"
-    description: "Search, inspect, and reserve synthetic flight offers."
+  - name: Flight offers and reservations
+    description: Search flight offers and create flight reservations.
+
 paths:
-  "/flight-offers":
+  /flight-offers:
     get:
       tags:
-        - "Flight offers and reservations"
-      operationId: "searchFlightOffers"
-      summary: "Search available flight offers"
-      description: "Return matching origin, destination and local departure-date offers with at least one available seat. City names are matched exactly and case-sensitively after trimming; origin and destination must differ. A valid search with no matches returns an empty offers array. No seat is reserved. Past-departure restrictions require refinement before implementation."
+        - Flight offers and reservations
+      operationId: searchFlightOffers
+      summary: Search available flight offers
+      description: >
+        Search by origin, destination, and departure date.
+        Leading and trailing whitespace is removed from city names
+        before exact, case-sensitive matching.
+        Origin and destination must differ after trimming.
+        The departure date is interpreted in the origin's local time.
+        Return only offers with at least one available seat.
+        Searching does not reserve seats.
+
       parameters:
-        -
-          name: "origin"
-          in: "query"
+        - name: origin
+          in: query
           required: true
-          description: "Departure city, not an airport code; trim whitespace before exact case-sensitive matching."
+          description: Departure city.
           schema:
-            "$ref": "#/components/schemas/NonBlankString"
-          example: "Munich"
-        -
-          name: "destination"
-          in: "query"
+            $ref: "#/components/schemas/NonBlankString"
+          example: Munich
+
+        - name: destination
+          in: query
           required: true
-          description: "Arrival city, not an airport code; trim whitespace before exact case-sensitive matching."
+          description: Arrival city.
           schema:
-            "$ref": "#/components/schemas/NonBlankString"
-          example: "Berlin"
-        -
-          name: "departureDate"
-          in: "query"
+            $ref: "#/components/schemas/NonBlankString"
+          example: Berlin
+
+        - name: departureDate
+          in: query
           required: true
-          description: "Scheduled departure date at the origin. Origin and destination must differ after trimming."
+          description: Departure date in the origin's local time.
           schema:
-            "$ref": "#/components/schemas/Date"
+            $ref: "#/components/schemas/Date"
           example: "2026-11-07"
+
       responses:
         "200":
-          description: "Search completed; no matches is a normal empty result."
+          description: Search completed. No matches returns an empty offers array.
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/SearchResult"
-              examples:
-                matchingOffers:
-                  value:
-                    offers:
-                      -
-                        offerId: "FLIGHT-OFFER-001"
-                        flightId: "FLIGHT-001-20261107"
-                        origin: "Munich"
-                        destination: "Berlin"
-                        departureDate: "2026-11-07"
-                noMatches:
-                  value:
-                    offers: []
+                $ref: "#/components/schemas/SearchResult"
+
         "400":
-          description: "Missing, blank, or invalid query parameters; includes business validation of dates and route."
+          description: Missing, blank, or invalid search parameters.
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/SearchInputError"
-              examples:
-                invalidInput:
-                  value:
-                    error:
-                      code: "INVALID_SEARCH_REQUEST"
-                      message: "departureDate must be a valid date in YYYY-MM-DD format."
-  "/flight-offers/{offerId}":
+                $ref: "#/components/schemas/SearchInputError"
+
+  /flight-offers/{offerId}:
     get:
       tags:
-        - "Flight offers and reservations"
-      operationId: "getFlightOffer"
-      summary: "Retrieve flight offer details"
-      description: "The offer identifies a specific scheduled flight occurrence, so no extra departure-date parameter is needed. An existing sold-out offer returns 200 with availableForBooking=false, not 404. No seat is reserved."
+        - Flight offers and reservations
+      operationId: getFlightOffer
+      summary: Get an offer and its availability
+      description: >
+        Return an existing offer and its current availability.
+        An existing but unavailable offer returns 200
+        with availableForBooking false.
+
       parameters:
-        -
-          name: "offerId"
-          in: "path"
+        - name: offerId
+          in: path
           required: true
-          description: "Offer for one specific scheduled flight occurrence, not a recurring flight number."
+          description: Identifier of the flight offer.
           schema:
-            "$ref": "#/components/schemas/NonBlankString"
-          example: "FLIGHT-OFFER-001"
+            $ref: "#/components/schemas/NonBlankString"
+          example: flight-offer-001
+
       responses:
         "200":
-          description: "The offer exists; availability may be false."
+          description: Offer found and availability checked.
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/OfferDetails"
-              examples:
-                available:
-                  value:
-                    offerId: "FLIGHT-OFFER-001"
-                    flightId: "FLIGHT-001-20261107"
-                    origin: "Munich"
-                    destination: "Berlin"
-                    departureDate: "2026-11-07"
-                    availableForBooking: true
-                unavailable:
-                  value:
-                    offerId: "FLIGHT-OFFER-001"
-                    flightId: "FLIGHT-001-20261107"
-                    origin: "Munich"
-                    destination: "Berlin"
-                    departureDate: "2026-11-07"
-                    availableForBooking: false
+                $ref: "#/components/schemas/OfferDetails"
+
         "404":
-          description: "The offer identifier does not exist."
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/OfferNotFoundError"
-              examples:
-                unknownOffer:
-                  value:
-                    error:
-                      code: "OFFER_NOT_FOUND"
-                      message: "The requested flight offer does not exist."
-  "/flight-reservations":
+          $ref: "#/components/responses/OfferNotFound"
+
+  /flight-reservations:
     post:
       tags:
-        - "Flight offers and reservations"
-      operationId: "createFlightReservation"
-      summary: "Create a flight reservation"
-      description: "Reserve one seat on the scheduled flight identified by the offer. Recheck current availability. In one local Flight Service database transaction, create the reservation and consume one seat, or commit neither. Inventory must never become negative. Two concurrent requests for the last seat, with no other faults, produce one 201 and one 409. This transaction does not span Hotel Service. A flight confirmation alone does not confirm a combined booking. Idempotent retry handling is not yet specified."
+        - Flight offers and reservations
+      operationId: createFlightReservation
+      summary: Create a flight reservation
+      description: >
+        Reserve one seat for the specified offer.
+        Availability must be checked again when creating the reservation.
+        Creating the reservation and updating seat inventory must be atomic
+        within the flight service.
+        A rejected request must not change inventory or create a reservation.
+        travellerId is a synthetic identity, not proof of authentication.
+        Repeated requests are not guaranteed to be idempotent.
+        A confirmed flight reservation does not confirm a hotel reservation.
+
       requestBody:
         required: true
-        description: "Local synthetic traveller identity only; no verified production ownership is established by this request."
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/CreateReservationRequest"
+              $ref: "#/components/schemas/CreateReservationRequest"
             example:
-              travellerId: "ALICE"
-              offerId: "FLIGHT-OFFER-001"
+              travellerId: traveller-001
+              offerId: flight-offer-001
+
       responses:
         "201":
-          description: "Reservation confirmed and inventory consumed in one local transaction."
+          description: Reservation created and seat inventory updated.
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Reservation"
-              examples:
-                confirmed:
-                  value:
-                    reservationId: "FR-001"
-                    travellerId: "ALICE"
-                    offerId: "FLIGHT-OFFER-001"
-                    flightId: "FLIGHT-001-20261107"
-                    origin: "Munich"
-                    destination: "Berlin"
-                    departureDate: "2026-11-07"
-                    status: "confirmed"
+                $ref: "#/components/schemas/Reservation"
+
         "400":
-          description: "Malformed JSON or missing, blank, wrongly typed, or otherwise invalid input fields."
+          description: Missing, blank, or invalid reservation fields.
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ReservationInputError"
-              examples:
-                invalidRequest:
-                  value:
-                    error:
-                      code: "INVALID_RESERVATION_REQUEST"
-                      message: "Required fields must be present and valid."
+                $ref: "#/components/schemas/ReservationInputError"
+
         "404":
-          description: "The offer identifier does not exist."
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/OfferNotFoundError"
-              examples:
-                unknownOffer:
-                  value:
-                    error:
-                      code: "OFFER_NOT_FOUND"
-                      message: "The requested flight offer does not exist."
+          $ref: "#/components/responses/OfferNotFound"
+
         "409":
-          description: "Existing offer has insufficient inventory; no reservation is created and no inventory is consumed by this request."
+          description: No seat is available for the requested offer.
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnavailableError"
-              examples:
-                soldOut:
-                  value:
-                    error:
-                      code: "FLIGHT_UNAVAILABLE"
-                      message: "No seat is available for the requested flight offer."
+                $ref: "#/components/schemas/UnavailableError"
+
 components:
+  responses:
+    OfferNotFound:
+      description: No offer exists with the specified offerId.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OfferNotFoundError"
+
   schemas:
-    NonBlankString:
-      type: "string"
-      minLength: 1
-      pattern: "\\S"
-      description: "A string containing at least one non-whitespace character."
     Date:
-      type: "string"
-      format: "date"
-      description: "A valid calendar date formatted as YYYY-MM-DD. Calendar validity must also be enforced by the implementation."
-    SearchInputError:
-      type: "object"
-      required:
-        - "error"
-      properties:
-        error:
-          type: "object"
-          required:
-            - "code"
-            - "message"
-          properties:
-            code:
-              type: "string"
-              enum:
-                - "INVALID_SEARCH_REQUEST"
-            message:
-              "$ref": "#/components/schemas/NonBlankString"
-          additionalProperties: false
-      additionalProperties: false
-    ReservationInputError:
-      type: "object"
-      required:
-        - "error"
-      properties:
-        error:
-          type: "object"
-          required:
-            - "code"
-            - "message"
-          properties:
-            code:
-              type: "string"
-              enum:
-                - "INVALID_RESERVATION_REQUEST"
-            message:
-              "$ref": "#/components/schemas/NonBlankString"
-          additionalProperties: false
-      additionalProperties: false
-    OfferNotFoundError:
-      type: "object"
-      required:
-        - "error"
-      properties:
-        error:
-          type: "object"
-          required:
-            - "code"
-            - "message"
-          properties:
-            code:
-              type: "string"
-              enum:
-                - "OFFER_NOT_FOUND"
-            message:
-              "$ref": "#/components/schemas/NonBlankString"
-          additionalProperties: false
-      additionalProperties: false
-    UnavailableError:
-      type: "object"
-      required:
-        - "error"
-      properties:
-        error:
-          type: "object"
-          required:
-            - "code"
-            - "message"
-          properties:
-            code:
-              type: "string"
-              enum:
-                - "FLIGHT_UNAVAILABLE"
-            message:
-              "$ref": "#/components/schemas/NonBlankString"
-          additionalProperties: false
-      additionalProperties: false
+      type: string
+      format: date
+      example: "2026-11-07"
+
+    NonBlankString:
+      type: string
+      minLength: 1
+      pattern: '\S'
+
     Offer:
-      type: "object"
+      type: object
+      additionalProperties: false
       required:
-        - "offerId"
-        - "flightId"
-        - "origin"
-        - "destination"
-        - "departureDate"
+        - offerId
+        - flightId
+        - origin
+        - destination
+        - departureDate
       properties:
         offerId:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         flightId:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         origin:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         destination:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         departureDate:
-          "$ref": "#/components/schemas/Date"
-      additionalProperties: false
-    OfferDetails:
-      type: "object"
-      required:
-        - "offerId"
-        - "flightId"
-        - "origin"
-        - "destination"
-        - "departureDate"
-        - "availableForBooking"
-      properties:
-        offerId:
-          "$ref": "#/components/schemas/NonBlankString"
-        flightId:
-          "$ref": "#/components/schemas/NonBlankString"
-        origin:
-          "$ref": "#/components/schemas/NonBlankString"
-        destination:
-          "$ref": "#/components/schemas/NonBlankString"
-        departureDate:
-          "$ref": "#/components/schemas/Date"
-        availableForBooking:
-          type: "boolean"
-          description: "Current availability only; does not guarantee a later reservation."
-      additionalProperties: false
+          $ref: "#/components/schemas/Date"
+
     SearchResult:
-      type: "object"
+      type: object
+      additionalProperties: false
       required:
-        - "offers"
+        - offers
       properties:
         offers:
-          type: "array"
+          type: array
           items:
-            "$ref": "#/components/schemas/Offer"
-          description: "Only matching available offers; may be empty."
+            $ref: "#/components/schemas/Offer"
+
+    OfferDetails:
+      type: object
       additionalProperties: false
-    CreateReservationRequest:
-      type: "object"
       required:
-        - "travellerId"
-        - "offerId"
+        - offerId
+        - flightId
+        - origin
+        - destination
+        - departureDate
+        - availableForBooking
+      properties:
+        offerId:
+          $ref: "#/components/schemas/NonBlankString"
+        flightId:
+          $ref: "#/components/schemas/NonBlankString"
+        origin:
+          $ref: "#/components/schemas/NonBlankString"
+        destination:
+          $ref: "#/components/schemas/NonBlankString"
+        departureDate:
+          $ref: "#/components/schemas/Date"
+        availableForBooking:
+          type: boolean
+          description: Whether at least one seat is currently available.
+
+    CreateReservationRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - travellerId
+        - offerId
       properties:
         travellerId:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         offerId:
-          "$ref": "#/components/schemas/NonBlankString"
-      additionalProperties: false
-      description: "travellerId is a synthetic local-test identity, not authentication. Dates, when supplied, must form a valid stay. Production identity and authorization remain to be designed."
+          $ref: "#/components/schemas/NonBlankString"
+
     Reservation:
-      type: "object"
+      type: object
+      additionalProperties: false
       required:
-        - "reservationId"
-        - "travellerId"
-        - "offerId"
-        - "flightId"
-        - "origin"
-        - "destination"
-        - "departureDate"
-        - "status"
+        - reservationId
+        - travellerId
+        - offerId
+        - flightId
+        - origin
+        - destination
+        - departureDate
+        - status
       properties:
         reservationId:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         travellerId:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         offerId:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         flightId:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         origin:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         destination:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         departureDate:
-          "$ref": "#/components/schemas/Date"
+          $ref: "#/components/schemas/Date"
         status:
-          type: "string"
+          type: string
           enum:
-            - "confirmed"
+            - confirmed
+
+    SearchInputError:
+      type: object
       additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              enum:
+                - INVALID_SEARCH_REQUEST
+            message:
+              $ref: "#/components/schemas/NonBlankString"
+
+    ReservationInputError:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              enum:
+                - INVALID_RESERVATION_REQUEST
+            message:
+              $ref: "#/components/schemas/NonBlankString"
+
+    OfferNotFoundError:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              enum:
+                - OFFER_NOT_FOUND
+            message:
+              $ref: "#/components/schemas/NonBlankString"
+
+    UnavailableError:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              enum:
+                - FLIGHT_UNAVAILABLE
+            message:
+              $ref: "#/components/schemas/NonBlankString"

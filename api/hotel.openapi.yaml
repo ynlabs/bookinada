@@ -1,426 +1,386 @@
-openapi: "3.0.3"
+openapi: 3.0.3
+
 info:
-  title: "Bookinada Hotel API"
-  version: "0.1.0"
-  description: "Proposed learning contract; no service implementation exists yet. Examples use synthetic data. Authentication, prices, idempotent retries, and operational server-error responses require further design before production use. Business invariants and relationships between fields require implementation and tests; linting does not prove them."
+  title: Bookinada Hotel API
+  version: 0.1.0
+  description: >
+    Search hotel offers, view availability, and create reservations
+    using synthetic data.
   license:
-    name: "Proprietary - no license granted"
+    name: Proprietary - no license granted
+
 servers:
-  - url: "http://localhost:3002"
-    description: "Proposed local development endpoint; no running service is implied."
+  - url: http://localhost:3002
+
 security: []
+
 tags:
-  - name: "Hotel offers and reservations"
-    description: "Search, inspect, and reserve synthetic hotel offers."
+  - name: Hotel offers and reservations
+    description: Search hotel offers and manage hotel reservations.
+
 paths:
-  "/hotel-offers":
+  /hotel-offers:
     get:
       tags:
-        - "Hotel offers and reservations"
-      operationId: "searchHotelOffers"
-      summary: "Search available hotel offers"
-      description: "Return only offers matching the destination with one room of the same room type available for every night in [checkIn, checkOut). A valid search with no matches returns an empty offers array. Dates must be valid and checkOut must be after checkIn. Search never reserves inventory."
+        - Hotel offers and reservations
+      operationId: searchHotelOffers
+      summary: Search available hotel offers
+      description: >
+        Search by destination and stay dates.
+        Each returned offer must have one room of the same room type
+        available for every occupied night.
+        checkOut must be after checkIn.
+        Searching does not reserve inventory.
+
       parameters:
-        - name: "destination"
-          in: "query"
+        - name: destination
+          in: query
           required: true
-          description: "Requested city. Matching rules require further refinement."
+          description: Destination to search.
           schema:
-            "$ref": "#/components/schemas/NonBlankString"
-          example: "Munich"
-        - name: "checkIn"
-          in: "query"
-          required: true
-          description: "Included first occupied night."
-          schema:
-            "$ref": "#/components/schemas/Date"
-          example: "2026-11-07"
-        - name: "checkOut"
-          in: "query"
-          required: true
-          description: "Excluded departure date; must be strictly after checkIn."
-          schema:
-            "$ref": "#/components/schemas/Date"
-          example: "2026-11-09"
+            $ref: "#/components/schemas/NonBlankString"
+          example: Munich
+
+        - $ref: "#/components/parameters/CheckIn"
+        - $ref: "#/components/parameters/CheckOut"
+
       responses:
         "200":
-          description: "Search completed; no matches is a normal empty result."
+          description: Search completed. No matches returns an empty offers array.
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/SearchResult"
-              examples:
-                matchingOffers:
-                  value:
-                    offers:
-                      - offerId: "OFFER-A-DOUBLE"
-                        hotelId: "HOTEL-A"
-                        hotelName: "Hotel A"
-                        destination: "Munich"
-                        roomTypeId: "DOUBLE"
-                        checkIn: "2026-11-07"
-                        checkOut: "2026-11-09"
-                noMatches:
-                  value:
-                    offers: []
+                $ref: "#/components/schemas/SearchResult"
+
         "400":
-          description: "Missing, blank, or invalid query parameters; includes business validation of dates and route."
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/SearchInputError"
-              examples:
-                invalidInput:
-                  value:
-                    error:
-                      code: "INVALID_SEARCH_REQUEST"
-                      message: "checkOut must be after checkIn."
-  "/hotel-offers/{offerId}":
+          $ref: "#/components/responses/InvalidSearch"
+
+  /hotel-offers/{offerId}:
     get:
       tags:
-        - "Hotel offers and reservations"
-      operationId: "getHotelOffer"
-      summary: "Retrieve hotel offer details"
-      description: "Return the existing room-type offer for the requested dates. An existing offer with no full-stay availability returns 200 with availableForStay=false, not 404. Apply the same stay-date validation as search. No inventory is reserved."
+        - Hotel offers and reservations
+      operationId: getHotelOffer
+      summary: Get an offer and its availability
+      description: >
+        Return an existing offer and its availability for the requested stay.
+        An existing but unavailable offer returns 200 with availableForStay false.
+        checkOut must be after checkIn.
+
       parameters:
-        - name: "offerId"
-          in: "path"
+        - name: offerId
+          in: path
           required: true
-          description: "Hotel room-type offer identifier; stay dates are supplied separately."
+          description: Identifier of the hotel offer.
           schema:
-            "$ref": "#/components/schemas/NonBlankString"
-          example: "OFFER-A-DOUBLE"
-        - name: "checkIn"
-          in: "query"
-          required: true
-          description: "Included first occupied night."
-          schema:
-            "$ref": "#/components/schemas/Date"
-          example: "2026-11-07"
-        - name: "checkOut"
-          in: "query"
-          required: true
-          description: "Excluded departure date; must be strictly after checkIn."
-          schema:
-            "$ref": "#/components/schemas/Date"
-          example: "2026-11-09"
+            $ref: "#/components/schemas/NonBlankString"
+          example: hotel-offer-001
+
+        - $ref: "#/components/parameters/CheckIn"
+        - $ref: "#/components/parameters/CheckOut"
+
       responses:
         "200":
-          description: "The offer exists; availability may be false."
+          description: Offer found and availability checked.
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/OfferDetails"
-              examples:
-                available:
-                  value:
-                    offerId: "OFFER-A-DOUBLE"
-                    hotelId: "HOTEL-A"
-                    hotelName: "Hotel A"
-                    destination: "Munich"
-                    roomTypeId: "DOUBLE"
-                    checkIn: "2026-11-07"
-                    checkOut: "2026-11-09"
-                    availableForStay: true
-                unavailable:
-                  value:
-                    offerId: "OFFER-A-DOUBLE"
-                    hotelId: "HOTEL-A"
-                    hotelName: "Hotel A"
-                    destination: "Munich"
-                    roomTypeId: "DOUBLE"
-                    checkIn: "2026-11-07"
-                    checkOut: "2026-11-09"
-                    availableForStay: false
+                $ref: "#/components/schemas/OfferDetails"
+
         "400":
-          description: "Missing, blank, or invalid query parameters; includes business validation of dates and route."
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/SearchInputError"
-              examples:
-                invalidInput:
-                  value:
-                    error:
-                      code: "INVALID_SEARCH_REQUEST"
-                      message: "checkOut must be after checkIn."
+          $ref: "#/components/responses/InvalidSearch"
+
         "404":
-          description: "The offer identifier does not exist."
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/OfferNotFoundError"
-              examples:
-                unknownOffer:
-                  value:
-                    error:
-                      code: "OFFER_NOT_FOUND"
-                      message: "The requested accommodation offer does not exist."
-  "/hotel-reservations":
+          $ref: "#/components/responses/OfferNotFound"
+
+  /hotel-reservations:
     post:
       tags:
-        - "Hotel offers and reservations"
-      operationId: "createHotelReservation"
-      summary: "Create a hotel reservation"
-      description: "Reserve one room of the same room type for every occupied night. Recheck current inventory, regardless of earlier search results. In one local Hotel Service database transaction, create the reservation and consume inventory for every night, or commit neither. Concurrent requests must not overbook any night. This transaction does not span Flight Service. Idempotent retry handling is not yet specified."
+        - Hotel offers and reservations
+      operationId: createHotelReservation
+      summary: Create a hotel reservation
+      description: >
+        Reserve one room for each occupied night from checkIn up to,
+        but excluding, checkOut.
+        checkOut must be after checkIn.
+        Availability must be checked again when creating the reservation.
+        Creating the reservation and updating inventory must be atomic
+        within the hotel service.
+        A rejected request must not change inventory or create a reservation.
+        travellerId is a synthetic identity, not proof of authentication.
+        Repeated requests are not guaranteed to be idempotent.
+
       requestBody:
         required: true
-        description: "Local synthetic traveller identity only; no verified production ownership is established by this request."
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/CreateReservationRequest"
+              $ref: "#/components/schemas/CreateReservationRequest"
             example:
-              travellerId: "ALICE"
-              offerId: "OFFER-A-DOUBLE"
+              travellerId: traveller-001
+              offerId: hotel-offer-001
               checkIn: "2026-11-07"
               checkOut: "2026-11-09"
+
       responses:
         "201":
-          description: "Reservation confirmed and inventory consumed in one local transaction."
+          description: Reservation created and inventory updated.
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Reservation"
-              examples:
-                confirmed:
-                  value:
-                    reservationId: "HR-001"
-                    travellerId: "ALICE"
-                    offerId: "OFFER-A-DOUBLE"
-                    checkIn: "2026-11-07"
-                    checkOut: "2026-11-09"
-                    status: "confirmed"
+                $ref: "#/components/schemas/Reservation"
+
         "400":
-          description: "Malformed JSON or missing, blank, wrongly typed, or otherwise invalid input fields."
+          description: Missing, blank, or invalid reservation fields.
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ReservationInputError"
-              examples:
-                invalidRequest:
-                  value:
-                    error:
-                      code: "INVALID_RESERVATION_REQUEST"
-                      message: "Required fields must be present and valid."
+                $ref: "#/components/schemas/ReservationInputError"
+
         "404":
-          description: "The offer identifier does not exist."
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/OfferNotFoundError"
-              examples:
-                unknownOffer:
-                  value:
-                    error:
-                      code: "OFFER_NOT_FOUND"
-                      message: "The requested accommodation offer does not exist."
+          $ref: "#/components/responses/OfferNotFound"
+
         "409":
-          description: "Existing offer has insufficient inventory; no reservation is created and no inventory is consumed by this request."
+          description: The requested room is unavailable for one or more nights.
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/UnavailableError"
-              examples:
-                soldOut:
-                  value:
-                    error:
-                      code: "ACCOMMODATION_UNAVAILABLE"
-                      message: "The requested room type is unavailable for the full stay."
+                $ref: "#/components/schemas/UnavailableError"
+
 components:
+  parameters:
+    CheckIn:
+      name: checkIn
+      in: query
+      required: true
+      description: First occupied night.
+      schema:
+        $ref: "#/components/schemas/Date"
+      example: "2026-11-07"
+
+    CheckOut:
+      name: checkOut
+      in: query
+      required: true
+      description: Departure date, excluded from the stay; must be after checkIn.
+      schema:
+        $ref: "#/components/schemas/Date"
+      example: "2026-11-09"
+
+  responses:
+    InvalidSearch:
+      description: Missing, blank, or invalid search parameters.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SearchInputError"
+
+    OfferNotFound:
+      description: No offer exists with the specified offerId.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OfferNotFoundError"
+
   schemas:
-    NonBlankString:
-      type: "string"
-      minLength: 1
-      pattern: "\\S"
-      description: "A string containing at least one non-whitespace character."
     Date:
-      type: "string"
-      format: "date"
-      description: "A valid calendar date formatted as YYYY-MM-DD. Calendar validity must also be enforced by the implementation."
-    SearchInputError:
-      type: "object"
-      required:
-        - "error"
-      properties:
-        error:
-          type: "object"
-          required:
-            - "code"
-            - "message"
-          properties:
-            code:
-              type: "string"
-              enum:
-                - "INVALID_SEARCH_REQUEST"
-            message:
-              "$ref": "#/components/schemas/NonBlankString"
-          additionalProperties: false
-      additionalProperties: false
-    ReservationInputError:
-      type: "object"
-      required:
-        - "error"
-      properties:
-        error:
-          type: "object"
-          required:
-            - "code"
-            - "message"
-          properties:
-            code:
-              type: "string"
-              enum:
-                - "INVALID_RESERVATION_REQUEST"
-            message:
-              "$ref": "#/components/schemas/NonBlankString"
-          additionalProperties: false
-      additionalProperties: false
-    OfferNotFoundError:
-      type: "object"
-      required:
-        - "error"
-      properties:
-        error:
-          type: "object"
-          required:
-            - "code"
-            - "message"
-          properties:
-            code:
-              type: "string"
-              enum:
-                - "OFFER_NOT_FOUND"
-            message:
-              "$ref": "#/components/schemas/NonBlankString"
-          additionalProperties: false
-      additionalProperties: false
-    UnavailableError:
-      type: "object"
-      required:
-        - "error"
-      properties:
-        error:
-          type: "object"
-          required:
-            - "code"
-            - "message"
-          properties:
-            code:
-              type: "string"
-              enum:
-                - "ACCOMMODATION_UNAVAILABLE"
-            message:
-              "$ref": "#/components/schemas/NonBlankString"
-          additionalProperties: false
-      additionalProperties: false
+      type: string
+      format: date
+      example: "2026-11-07"
+
+    NonBlankString:
+      type: string
+      minLength: 1
+      pattern: '\S'
+
     Offer:
-      type: "object"
+      type: object
+      additionalProperties: false
       required:
-        - "offerId"
-        - "hotelId"
-        - "hotelName"
-        - "destination"
-        - "roomTypeId"
-        - "checkIn"
-        - "checkOut"
+        - offerId
+        - hotelId
+        - hotelName
+        - destination
+        - roomTypeId
+        - checkIn
+        - checkOut
       properties:
         offerId:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         hotelId:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         hotelName:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         destination:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         roomTypeId:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         checkIn:
-          "$ref": "#/components/schemas/Date"
+          $ref: "#/components/schemas/Date"
         checkOut:
-          "$ref": "#/components/schemas/Date"
-      additionalProperties: false
-    OfferDetails:
-      type: "object"
-      required:
-        - "offerId"
-        - "hotelId"
-        - "hotelName"
-        - "destination"
-        - "roomTypeId"
-        - "checkIn"
-        - "checkOut"
-        - "availableForStay"
-      properties:
-        offerId:
-          "$ref": "#/components/schemas/NonBlankString"
-        hotelId:
-          "$ref": "#/components/schemas/NonBlankString"
-        hotelName:
-          "$ref": "#/components/schemas/NonBlankString"
-        destination:
-          "$ref": "#/components/schemas/NonBlankString"
-        roomTypeId:
-          "$ref": "#/components/schemas/NonBlankString"
-        checkIn:
-          "$ref": "#/components/schemas/Date"
-        checkOut:
-          "$ref": "#/components/schemas/Date"
-        availableForStay:
-          type: "boolean"
-          description: "Current availability only; does not guarantee a later reservation."
-      additionalProperties: false
+          $ref: "#/components/schemas/Date"
+
     SearchResult:
-      type: "object"
+      type: object
+      additionalProperties: false
       required:
-        - "offers"
+        - offers
       properties:
         offers:
-          type: "array"
+          type: array
           items:
-            "$ref": "#/components/schemas/Offer"
-          description: "Only matching available offers; may be empty."
+            $ref: "#/components/schemas/Offer"
+
+    OfferDetails:
+      type: object
       additionalProperties: false
-    CreateReservationRequest:
-      type: "object"
       required:
-        - "travellerId"
-        - "offerId"
-        - "checkIn"
-        - "checkOut"
+        - offerId
+        - hotelId
+        - hotelName
+        - destination
+        - roomTypeId
+        - checkIn
+        - checkOut
+        - availableForStay
+      properties:
+        offerId:
+          $ref: "#/components/schemas/NonBlankString"
+        hotelId:
+          $ref: "#/components/schemas/NonBlankString"
+        hotelName:
+          $ref: "#/components/schemas/NonBlankString"
+        destination:
+          $ref: "#/components/schemas/NonBlankString"
+        roomTypeId:
+          $ref: "#/components/schemas/NonBlankString"
+        checkIn:
+          $ref: "#/components/schemas/Date"
+        checkOut:
+          $ref: "#/components/schemas/Date"
+        availableForStay:
+          type: boolean
+          description: Whether one room is available for every occupied night.
+
+    CreateReservationRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - travellerId
+        - offerId
+        - checkIn
+        - checkOut
       properties:
         travellerId:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         offerId:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         checkIn:
-          "$ref": "#/components/schemas/Date"
+          $ref: "#/components/schemas/Date"
         checkOut:
-          "$ref": "#/components/schemas/Date"
-      additionalProperties: false
-      description: "travellerId is a synthetic local-test identity, not authentication. Dates, when supplied, must form a valid stay. Production identity and authorization remain to be designed."
+          $ref: "#/components/schemas/Date"
+
     Reservation:
-      type: "object"
+      type: object
+      additionalProperties: false
       required:
-        - "reservationId"
-        - "travellerId"
-        - "offerId"
-        - "checkIn"
-        - "checkOut"
-        - "status"
+        - reservationId
+        - travellerId
+        - offerId
+        - checkIn
+        - checkOut
+        - status
       properties:
         reservationId:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         travellerId:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         offerId:
-          "$ref": "#/components/schemas/NonBlankString"
+          $ref: "#/components/schemas/NonBlankString"
         checkIn:
-          "$ref": "#/components/schemas/Date"
+          $ref: "#/components/schemas/Date"
         checkOut:
-          "$ref": "#/components/schemas/Date"
+          $ref: "#/components/schemas/Date"
         status:
-          type: "string"
+          type: string
           enum:
-            - "confirmed"
+            - confirmed
+
+    SearchInputError:
+      type: object
       additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              enum:
+                - INVALID_SEARCH_REQUEST
+            message:
+              $ref: "#/components/schemas/NonBlankString"
+
+    ReservationInputError:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              enum:
+                - INVALID_RESERVATION_REQUEST
+            message:
+              $ref: "#/components/schemas/NonBlankString"
+
+    OfferNotFoundError:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              enum:
+                - OFFER_NOT_FOUND
+            message:
+              $ref: "#/components/schemas/NonBlankString"
+
+    UnavailableError:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              enum:
+                - ACCOMMODATION_UNAVAILABLE
+            message:
+              $ref: "#/components/schemas/NonBlankString"
